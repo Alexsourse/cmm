@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Системный SMM | Генерация заявок</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
+
+        :root {
+            /* Colors: Zinc base, muted rust/terracotta accent (<80% sat) */
+            --bg-base: #f4f4f5;
+            --bg-alt: #e4e4e7;
+            --bg-dark: #18181b;
+            --bg-dark-alt: #27272a;
+            
+            --text-main: #18181b;
+            --text-muted: #52525b;
+            --text-invert: #f4f4f5;
+            --text-invert-muted: #a1a1aa;
+            
+            --accent: #c45d37; /* HSL 16, 56%, 49% */
+            --accent-hover: #a34c2c;
+            
+            --border: #d4d4d8;
+            --border-dark: #3f3f46;
+
+            /* Typography */
+            --font: 'Outfit', sans-serif;
+            
+            /* Motion */
+            --easing: cubic-bezier(0.16, 1, 0.3, 1);
+            --transition-fast: 0.3s var(--easing);
+            --transition-slow: 0.8s var(--easing);
+            
+            /* Spacing */
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 2rem;
+            --space-lg: 4rem;
+            --space-xl: 8rem;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        /* Typography */
+        h1 { font-size: clamp(3rem, 6vw, 5.5rem); line-height: 1; font-weight: 500; letter-spacing: -0.03em; }
+        h2 { font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.1; font-weight: 500; letter-spacing: -0.02em; }
+        h3 { font-size: 1.5rem; font-weight: 500; }
+        .text-xl { font-size: clamp(1.125rem, 2vw, 1.5rem); line-height: 1.4; color: var(--text-muted); }
+        .label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--accent); }
+
+        /* Animation Classes */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity var(--transition-slow), transform var(--transition-slow);
+            will-change: opacity, transform;
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+        /* Components */
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 99px;
+            font-weight: 500;
+            transition: background var(--transition-fast), transform var(--transition-fast);
+            display: inline-block;
+        }
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .btn-secondary {
+            box-shadow: inset 0 0 0 1px var(--border);
+            color: var(--text-main);
+            padding: 1rem 2rem;
+            border-radius: 99px;
+            font-weight: 500;
+            transition: all var(--transition-fast);
+            display: inline-block;
+        }
+        .btn-secondary:hover {
+            box-shadow: inset 0 0 0 1px var(--text-main);
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Nav */
+        nav {
+            padding: var(--space-md) 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+        }
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { font-weight: 600; font-size: 1.25rem; letter-spacing: -0.02em; }
+        
+        /* Hero Section (Asymmetric) */
+        .hero {
+            padding-top: calc(var(--space-xl) + 4rem);
+            padding-bottom: var(--space-xl);
+            min-height: 95vh;
+            display: flex;
+            align-items: center;
+        }
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: var(--space-lg);
+            align-items: center;
+        }
+        .hero-content {
+            padding-right: var(--space-lg);
+        }
+        .hero-title {
+            margin-bottom: var(--space-md);
+        }
+        .hero-desc {
+            margin-bottom: var(--space-lg);
+            max-width: 28ch;
+        }
+        .hero-actions {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+        .hero-visual {
+            position: relative;
+            height: 600px;
+        }
+        .hero-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+            filter: grayscale(20%) contrast(110%);
+        }
+        .hero-fact {
+            position: absolute;
+            bottom: -2rem;
+            left: -2rem;
+            background: var(--bg-base);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+            max-width: 240px;
+        }
+        .fact-num { font-size: 2.5rem; font-weight: 500; color: var(--accent); line-height: 1; }
+        .fact-text { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem; }
+
+        /* Pain Points (Split screen sticky) */
+        .pains {
+            background: var(--bg-dark);
+            color: var(--text-invert);
+            padding: var(--space-xl) 0;
+            position: relative;
+        }
+        .pains-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: var(--space-xl);
+        }
+        .pains-header {
+            position: sticky;
+            top: 100px;
+            height: max-content;
+        }
+        .pains-header .text-xl { color: var(--text-invert-muted); margin-top: var(--space-sm); }
+        .pains-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px; /* For border illusion */
+            background: var(--border-dark);
+        }
+        .pain-item {
+            background: var(--bg-dark);
+            padding: var(--space-lg);
+            display: grid;
+            grid-template-columns: 40px 1fr;
+            gap: var(--space-md);
+            transition: background var(--transition-fast);
+        }
+        .pain-item:hover {
+            background: var(--bg-dark-alt);
+        }
+        .pain-icon {
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            margin-top: 8px;
+        }
+        .pain-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: var(--space-xs);
+        }
+        .pain-desc {
+            color: var(--text-invert-muted);
+        }
+
+        /* Services (Typography large list) */
+        .services {
+            padding: var(--space-xl) 0;
+        }
+        .section-header {
+            margin-bottom: var(--space-xl);
+        }
+        .services-list {
+            border-top: 1px solid var(--border);
+        }
+        .service-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 1fr;
+            gap: var(--space-md);
+            padding: var(--space-lg) 0;
+            border-bottom: 1px solid var(--border);
+            align-items: start;
+            transition: padding var(--transition-fast);
+        }
+        .service-row:hover {
+            padding-left: var(--space-sm);
+            padding-right: var(--space-sm);
+            background: var(--bg-alt);
+        }
+        .service-num {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+        .service-title {
+            font-size: 2rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+        }
+        .service-details p {
+            color: var(--text-muted);
+            margin-bottom: var(--space-md);
+        }
+        .service-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            box-shadow: inset 0 0 0 1px var(--border);
+            font-size: 0.75rem;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Advantages (Asymmetric stacking) */
+        .advantages {
+            padding: var(--space-xl) 0;
+            background: var(--bg-alt);
+        }
+        .adv-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: var(--space-md);
+        }
+        .adv-main {
+            grid-column: 1 / 6;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .adv-card {
+            background: var(--bg-base);
+            padding: var(--space-lg);
+            border-radius: 16px;
+        }
+        .adv-card.offset-1 {
+            grid-column: 7 / 13;
+            margin-top: 4rem;
+        }
+        .adv-card.offset-2 {
+            grid-column: 5 / 11;
+            margin-top: -2rem;
+            z-index: 2;
+        }
+        .adv-card.offset-3 {
+            grid-column: 8 / 13;
+        }
+        .adv-card h3 { margin-bottom: var(--space-sm); }
+        .adv-card p { color: var(--text-muted); }
+
+        /* Cases (Large overlapping panels) */
+        .cases {
+            padding: var(--space-xl) 0;
+        }
+        .cases-container {
+            position: relative;
+            margin-top: var(--space-xl);
+        }
+        .case-card {
+            background: var(--bg-dark);
+            color: var(--text-invert);
+            border-radius: 24px;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+        .case-img {
+            height: 100%;
+            min-height: 400px;
+        }
+        .case-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+            transition: opacity var(--transition-fast);
+        }
+        .case-card:hover .case-img img { opacity: 1; }
+        .case-content {
+            padding: var(--space-lg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .case-mets {
+            display: flex;
+            gap: var(--space-lg);
+            margin: var(--space-md) 0;
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-dark);
+        }
+        .met-val { font-size: 2.5rem; font-weight: 500; color: var(--accent); line-height: 1; }
+        .met-lbl { font-size: 0.875rem; color: var(--text-invert-muted); margin-top: 4px; }
+        
+        .case-1 { width: 90%; margin-bottom: -100px; position: relative; z-index: 1; }
+        .case-2 { width: 85%; margin-left: auto; position: relative; z-index: 2; box-shadow: 0 -20px 40px rgba(0,0,0,0.1); }
+
+        /* Process (Winding path / step indentation) */
+        .process {
+            padding: var(--space-xl) 0;
+            background: var(--bg-dark);
+            color: var(--text-invert);
+        }
+        .step-list {
+            position: relative;
+            margin-top: var(--space-lg);
+        }
+        .step-list::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border-dark);
+        }
+        .step {
+            position: relative;
+            padding-left: 5vw;
+            margin-bottom: var(--space-lg);
+            width: 70%;
+        }
+        .step:nth-child(even) {
+            margin-left: auto;
+            padding-left: 0;
+            padding-right: 5vw;
+            text-align: right;
+        }
+        .step:nth-child(even)::after {
+            content: '';
+            position: absolute;
+            right: -24px;
+            top: 0;
+            width: 48px;
+            height: 1px;
+            background: var(--border-dark);
+        }
+        .step-num {
+            font-size: 1rem;
+            color: var(--accent);
+            margin-bottom: var(--space-xs);
+            font-weight: 600;
+        }
+        .step-desc { color: var(--text-invert-muted); margin-top: var(--space-xs); }
+
+        /* Tariffs (Asymmetric 2-col) */
+        .pricing {
+            padding: var(--space-xl) 0;
+        }
+        .price-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: var(--space-md);
+            align-items: stretch;
+            margin-top: var(--space-lg);
+        }
+        .plan {
+            padding: var(--space-lg);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .plan-basic {
+            box-shadow: inset 0 0 0 1px var(--border);
+        }
+        .plan-pro {
+            background: var(--bg-dark);
+            color: var(--text-invert);
+        }
+        .plan-price { font-size: 2.5rem; font-weight: 500; margin: var(--space-md) 0; }
+        .plan-pro .plan-price { color: var(--accent); }
+        .plan-list { margin-bottom: var(--space-lg); flex-grow: 1; }
+        .plan-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+        .plan-pro .plan-list li { border-color: var(--border-dark); color: var(--text-invert-muted); }
+        
+        /* FAQ */
+        .faq {
+            padding: var(--space-xl) 0;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .faq-item {
+            border-bottom: 1px solid var(--border);
+        }
+        .faq-q {
+            width: 100%;
+            text-align: left;
+            padding: var(--space-md) 0;
+            font-size: 1.25rem;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-main);
+        }
+        .faq-q::after {
+            content: '+';
+            font-size: 1.5rem;
+            transition: transform var(--transition-fast);
+        }
+        .faq-item.active .faq-q::after { transform: rotate(45deg); }
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s var(--easing), padding 0.5s var(--easing), opacity 0.5s var(--easing);
+            opacity: 0;
+            color: var(--text-muted);
+        }
+        .faq-item.active .faq-a {
+            padding-bottom: var(--space-md);
+            opacity: 1;
+        }
+
+        /* Final CTA */
+        .final-cta {
+            background: var(--bg-dark);
+            color: var(--text-invert);
+            padding: var(--space-xl) 0;
+            border-radius: 40px 40px 0 0;
+        }
+        .cta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
+        }
+        .cta-content h2 { margin-bottom: var(--space-md); }
+        .form-group { margin-bottom: var(--space-md); }
+        input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-dark);
+            padding: 1rem 0;
+            color: var(--text-invert);
+            font-family: inherit;
+            font-size: 1.125rem;
+            transition: border-color var(--transition-fast);
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+        
+        footer {
+            background: #0d0d0f;
+            color: var(--text-invert-muted);
+            padding: var(--space-md) 0;
+            font-size: 0.875rem;
+        }
+        .foot-inner { display: flex; justify-content: space-between; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 1024px) {
+            .hero-grid, .pains-grid, .cta-grid { grid-template-columns: 1fr; }
+            .hero-visual { height: 400px; margin-top: var(--space-md); }
+            .pains-header { position: static; margin-bottom: var(--space-md); }
+            h1 { font-size: 3rem; }
+            .service-row { grid-template-columns: 1fr; gap: var(--space-sm); }
+            .service-num { display: none; }
+            .adv-grid { display: flex; flex-direction: column; }
+            .adv-card { margin: 0 !important; }
+            .case-card { grid-template-columns: 1fr; }
+            .case-1, .case-2 { width: 100%; margin-bottom: var(--space-md); box-shadow: none; }
+            .case-img { min-height: 250px; }
+            .step { width: 100%; padding-left: 2rem; }
+            .step:nth-child(even) { text-align: left; padding-right: 0; padding-left: 2rem; }
+            .step-list::before { left: 0; }
+            .price-layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container nav-inner">
+            <div class="logo">SystemSMM.</div>
+            <a href="#contact" class="btn-secondary">Обсудить проект</a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="container hero-grid">
+            <div class="hero-content reveal">
+                <span class="label">Результирующий маркетинг</span>
+                <h1 class="hero-title">SMM, который генерирует заявки, а не просто охваты.</h1>
+                <p class="text-xl hero-desc">Выстраиваем стабильный поток сделок через контент, стратегию и аналитику. Избавляем от хаоса в публикациях.</p>
+                <div class="hero-actions">
+                    <a href="#contact" class="btn-primary">Рассчитать стоимость</a>
+                </div>
+            </div>
+            <div class="hero-visual reveal delay-2">
+                <img src="https://picsum.photos/seed/structural/800/600" alt="Абстрактная структура" class="hero-img">
+                <div class="hero-fact">
+                    <div class="fact-num">+150%</div>
+                    <div class="fact-text">Средний рост целевых обращений за 3 месяца работы по нашей системе.</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="pains">
+        <div class="container pains-grid">
+            <div class="pains-header reveal">
+                <h2>Знакомые симптомы?</h2>
+                <p class="text-xl">Большинство компаний теряют деньги из-за отсутствия системного подхода.</p>
+            </div>
+            <div class="pains-list reveal delay-1">
+                <div class="pain-item">
+                    <div class="pain-icon"></div>
+                    <div>
+                        <h3 class="pain-title">Охваты есть, сделок нет</h3>
+                        <p class="pain-desc">Аудитория лайкает красивые посты, но не переходит в воронку продаж и не оставляет контакты.</p>
+                    </div>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon"></div>
+                    <div>
+                        <h3 class="pain-title">Контент ради контента</h3>
+                        <p class="pain-desc">Публикации выходят хаотично, без привязки к бизнес-целям, сезонности и прогреву.</p>
+                    </div>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon"></div>
+                    <div>
+                        <h3 class="pain-title">Подрядчики пропадают</h3>
+                        <p class="pain-desc">Отсутствие прозрачной отчетности и понимания, на что уходит маркетинговый бюджет.</p>
+                    </div>
+                </div>
+                <div class="pain-item">
+                    <div class="pain-icon"></div>
+                    <div>
+                        <h3 class="pain-title">Нет единого стиля</h3>
+                        <p class="pain-desc">Бренд выглядит по-разному на разных площадках, что снижает доверие премиум-сегмента.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="services">
+        <div class="container">
+            <div class="section-header reveal">
+                <span class="label">Архитектура решения</span>
+                <h2>Что мы делаем для роста.</h2>
+            </div>
+            
+            <div class="services-list">
+                <div class="service-row reveal">
+                    <div class="service-num">01</div>
+                    <div class="service-title">Аудит и Стратегия</div>
+                    <div class="service-details">
+                        <p>Исследуем рынок, аудиторию и конкурентов. Формируем позиционирование и медиаплан, который связывает посты с вашим планом продаж.</p>
+                        <div>
+                            <span class="service-tag">Анализ ЦА</span>
+                            <span class="service-tag">Позиционирование</span>
+                            <span class="service-tag">KPI план</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="service-row reveal">
+                    <div class="service-num">02</div>
+                    <div class="service-title">Визуальная упаковка</div>
+                    <div class="service-details">
+                        <p>Создаем гайдлайны и концепции, которые выделяют вас в ленте. Работаем с нейросетями, 3D и профессиональным продакшеном для создания дорогого образа.</p>
+                        <div>
+                            <span class="service-tag">Брендбук соцсетей</span>
+                            <span class="service-tag">Моушн-дизайн</span>
+                            <span class="service-tag">Фото/Видео</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-row reveal">
+                    <div class="service-num">03</div>
+                    <div class="service-title">Системное ведение</div>
+                    <div class="service-details">
+                        <p>Берем на себя всю рутину: от написания текстов и монтажа Reels до ежедневного постинга и модерации комментариев.</p>
+                        <div>
+                            <span class="service-tag">Копирайтинг</span>
+                            <span class="service-tag">Reels & Shorts</span>
+                            <span class="service-tag">Комьюнити</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-row reveal">
+                    <div class="service-num">04</div>
+                    <div class="service-title">Трафик и Аналитика</div>
+                    <div class="service-details">
+                        <p>Запускаем таргетированную рекламу и посевы у блогеров. Еженедельно оптимизируем связки для снижения стоимости лида (CPL).</p>
+                        <div>
+                            <span class="service-tag">Таргет</span>
+                            <span class="service-tag">Инфлюенс</span>
+                            <span class="service-tag">PowerBI отчеты</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="advantages">
+        <div class="container">
+            <div class="adv-grid">
+                <div class="adv-main reveal">
+                    <h2>Отличаемся подходом к данным.</h2>
+                    <p class="text-xl">Мы не агентство креатива ради креатива. Мы интегрируем соцсети в вашу бизнес-модель.</p>
+                </div>
+                <div class="adv-card offset-1 reveal delay-1">
+                    <h3>Предсказуемость</h3>
+                    <p>Твердый контент-план на месяц вперед. Строгая система согласований, исключающая сюрпризы публикации.</p>
+                </div>
+                <div class="adv-card offset-2 reveal delay-2">
+                    <h3>Фокус на конверсии</h3>
+                    <p>Тестируем гипотезы на основе цифр вовлеченности и кликов, а не субъективного "нравится / не нравится".</p>
+                </div>
+                <div class="adv-card offset-3 reveal delay-3">
+                    <h3>Одна команда</h3>
+                    <p>За вашим проектом закрепляется выделенный проджект-менеджер, стратег и копирайтер, погруженные в специфику.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cases" id="cases">
+        <div class="container">
+            <span class="label">Доказательства</span>
+            <h2>Трансформируем присутствие.</h2>
+            
+            <div class="cases-container">
+                <div class="case-card case-1 reveal">
+                    <div class="case-img">
+                        <img src="https://picsum.photos/seed/b2bfactory/800/800" alt="Кейс B2B">
+                    </div>
+                    <div class="case-content">
+                        <h3>Завод металлоконструкций</h3>
+                        <p class="text-invert-muted">Переупаковка сложных B2B продуктов для лиц принимающих решения. Переход от сухих фактов к демонстрации экспертности через разбор реальных инженерных задач.</p>
+                        <div class="case-mets">
+                            <div>
+                                <div class="met-val">-40%</div>
+                                <div class="met-lbl">Стоимость лида (CPL)</div>
+                            </div>
+                            <div>
+                                <div class="met-val">x3</div>
+                                <div class="met-lbl">Рост целевых обращений</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="case-card case-2 reveal delay-1">
+                    <div class="case-img">
+                        <img src="https://picsum.photos/seed/coffeeshop/800/800" alt="Кейс Локал Ритейл">
+                    </div>
+                    <div class="case-content">
+                        <h3>Сеть спешелти кофеен</h3>
+                        <p class="text-invert-muted">Разработка эстетичного лайфстайл-профиля с акцентом на короткие видеоролики и локальное комьюнити. Внедрение UGC (контента от пользователей) в стратегию.</p>
+                        <div class="case-mets">
+                            <div>
+                                <div class="met-val">4.5k</div>
+                                <div class="met-lbl">Новых подписчиков</div>
+                            </div>
+                            <div>
+                                <div class="met-val">+28%</div>
+                                <div class="met-lbl">Вовлеченность (ER)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="process">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>Как мы строим процесс.</h2>
+                <p class="text-xl">Без черных ящиков. Каждый этап прозрачен.</p>
+            </div>
+            
+            <div class="step-list">
+                <div class="step reveal">
+                    <div class="step-num">Шаг 1. Погружение</div>
+                    <h3>Глубинный бриф и аудит</h3>
+                    <p class="step-desc">Проводим интервью с фаундерами. Изучаем текущие метрики бюджета, стоимости клиента и жизненного цикла. Находим узкие горлышки.</p>
+                </div>
+                <div class="step reveal">
+                    <div class="step-num">Шаг 2. Разработка</div>
+                    <h3>Стратегия и План</h3>
+                    <p class="step-desc">Формируем матрицу контента. Разрабатываем tone of voice, рубрикатор и визуальную концепцию (мудборд). Устанавливаем целевые KPI на квартал.</p>
+                </div>
+                <div class="step reveal">
+                    <div class="step-num">Шаг 3. Запуск</div>
+                    <h3>Продакшн и Упаковка</h3>
+                    <p class="step-desc">Проводим первую фото/видео съемку. Оформляем хайлайтсы, описание профиля, дизайн первых постов. Полностью готовим площадку к приему трафика.</p>
+                </div>
+                <div class="step reveal">
+                    <div class="step-num">Шаг 4. Управление</div>
+                    <h3>Синхронный постинг и трафик</h3>
+                    <p class="step-desc">Ежедневная работа по плану. Запуск рекламных кампаний. Модерация ответов. Еженедельный срез показателей и корректировка курса.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pricing">
+        <div class="container reveal">
+            <span class="label">Инвестиции</span>
+            <h2>Форматы работы.</h2>
+            
+            <div class="price-layout">
+                <div class="plan plan-basic">
+                    <h3>Base</h3>
+                    <p>Для проектов, требующих качественной упаковки и регулярного присутствия.</p>
+                    <div class="plan-price">от 80k ₽</div>
+                    <ul class="plan-list">
+                        <li>Разработка базовой стратегии</li>
+                        <li>Оформление 1 социальной сети</li>
+                        <li>15 постов + 10 Stories в месяц</li>
+                        <li>Базовая модерация</li>
+                        <li>Ежемесячный отчет</li>
+                    </ul>
+                    <a href="#contact" class="btn-secondary" style="text-align: center;">Обсудить формат</a>
+                </div>
+                
+                <div class="plan plan-pro">
+                    <h3>Growth</h3>
+                    <p>Комплексный Performance SMM с фокусом на измеримую лидогенерацию и продажи.</p>
+                    <div class="plan-price">от 150k ₽</div>
+                    <ul class="plan-list">
+                        <li>Глубинная стратегия и изучение CJM</li>
+                        <li>Присутствие на 3 ключевых площадках</li>
+                        <li>Сложный продакшн (Reels монтаж, инфографика)</li>
+                        <li>Настройка и ведение таргетированной рекламы</li>
+                        <li>Управление комьюнити в реальном времени</li>
+                        <li>Дашборды в PowerBI с интеграцией CRM</li>
+                    </ul>
+                    <a href="#contact" class="btn-primary" style="text-align: center; border: none;">Получить индивидуальный расчет</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="faq">
+        <div class="container reveal">
+            <h2 style="text-align: center; margin-bottom: var(--space-lg);">Частые вопросы.</h2>
+            
+            <div class="faq-item">
+                <button class="faq-q">С какими нишами вы работаете?</button>
+                <div class="faq-a">
+                    <p>Мы специализируемся на B2B-сегменте, премиальной недвижимости, сфере IT и e-commerce с высоким средним чеком. Наша система заточена под сложные продукты, где требуется прогрев и построение доверия, а не импульсивные покупки.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">Через сколько будут первые заявки?</button>
+                <div class="faq-a">
+                    <p>Первый месяц уходит на упаковку и тесты. Если подключается платный трафик (таргет), первые целевые обращения появляются на 3-4 неделю. Органический рост через reels/shorts дает эффект на 2-3 месяц регулярной работы.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">Нужно ли нам самим снимать видео?</button>
+                <div class="faq-a">
+                    <p>Зависит от формата. Мы предоставляем услуги выездного продакшена в крупных городах. Если бизнес находится в другом регионе, мы составляем детальные ТЗ (сценарии, ракурсы, референсы) для вашей команды, а весь монтаж и упаковку забираем на себя.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <button class="faq-q">Как проходит согласование материалов?</button>
+                <div class="faq-a">
+                    <p>Мы работаем через удобные канбан-доски (Notion/Trello/Figma). Тексты и графика утверждаются пакетами на 1-2 недели вперед. Ничто не публикуется без вашего акцепта.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="final-cta" id="contact">
+        <div class="container cta-grid">
+            <div class="cta-content reveal">
+                <h2>Готовы перевести соцсети из разряда расходов в активы?</h2>
+                <p class="text-xl">Оставьте короткую заявку. Мы свяжемся в течение часа, чтобы обсудить текущую ситуацию и предложить вектор развития.</p>
+                <div style="margin-top: var(--space-md); color: var(--text-invert-muted);">
+                    hello@systemsmm.io<br>
+                    Telegram: @systemsmm
+                </div>
+            </div>
+            <div class="cta-form reveal delay-1">
+                <form onsubmit="event.preventDefault();">
+                    <div class="form-group">
+                        <input type="text" placeholder="Имя или Название компании" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="url" placeholder="Ссылка на текущий профиль или сайт">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" placeholder="Telegram профиль для связи" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: var(--space-sm); width: 100%;">Отправить бриф</button>
+                    <p style="font-size: 0.75rem; color: var(--text-invert-muted); margin-top: 1rem; text-align: center;">
+                        Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container foot-inner">
+            <span>© 2024 SystemSMM. Digital Architecture.</span>
+            <span>Политика конфиденциальности</span>
+        </div>
+    </footer>
+
+    <script>
+        // Intersection Observer for Reveal Animations
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(element => {
+            observer.observe(element);
+        });
+
+        // FAQ Accordion Logic with smooth height transition calculation
+        document.querySelectorAll('.faq-q').forEach(button => {
+            button.addEventListener('click', () => {
+                const item = button.parentElement;
+                const answer = item.querySelector('.faq-a');
+                
+                const isActive = item.classList.contains('active');
+                
+                // Close all other
+                document.querySelectorAll('.faq-item').forEach(otherItem => {
+                    otherItem.classList.remove('active');
+                    otherItem.querySelector('.faq-a').style.maxHeight = null;
+                });
+
+                if (!isActive) {
+                    item.classList.add('active');
+                    answer.style.maxHeight = answer.scrollHeight + 32 + "px"; // 32 is padding equivalent
+                }
+            });
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if(targetId === '#') return;
+                
+                const targetBlock = document.querySelector(targetId);
+                if(targetBlock) {
+                    targetBlock.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
